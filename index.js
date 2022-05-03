@@ -70,7 +70,7 @@ const getData = async () => {
   }
 };
 
-cron.schedule("30 17 * * *", async () => {
+cron.schedule("59 14 * * *", async () => {
   const instagramLoginFunction = async () => {
     const client = new Instagram(
       {
