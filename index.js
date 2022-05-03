@@ -6,7 +6,7 @@ const fs = require("fs");
 const cron = require("node-cron");
 const imaps = require("imap-simple");
 const _ = require("lodash");
-const simpleParser = require("mailParser").simpleParser;
+const simpleParser = require("mailparser").simpleParser;
 const firebase = require("firebase-admin");
 const admin = require("firebase-admin/app");
 var serviceAccount = require("./serviceAccountKey.json");
@@ -164,73 +164,73 @@ cron.schedule("59 15 * * *", async () => {
           },
         };
 
-        const delayedEmailFunction = async (timeout) => {
-          try {
-            setTimeout(async () => {
-              imaps.connect(emailConfig).then(async (connection) => {
-                return connection.openBox("INBOX").then(() => {
-                  const delay = 1 * 3600 * 1000;
-                  let lastHour = new Date();
-                  lastHour.setTime(Date.now() - delay);
-                  lastHour = lastHour.toISOString();
-                  const searchCriteria = ["ALL", "SINCE", lastHour];
-                  const fetchOptions = {
-                    bodies: [""],
-                  };
-                  return connection
-                    .search(searchCriteria, fetchOptions)
-                    .then((messages) => {
-                      console.log("messages", messages);
-                      messages.forEach((item) => {
-                        const all = _.find(item.parts, { which: "" });
-                        const id = item.attributes.uid;
-                        const idHeader = "Imap-Id: " + id + "\r\n";
+        // const delayedEmailFunction = async (timeout) => {
+        //   try {
+        //     setTimeout(async () => {
+        //       imaps.connect(emailConfig).then(async (connection) => {
+        //         return connection.openBox("INBOX").then(() => {
+        //           const delay = 1 * 3600 * 1000;
+        //           let lastHour = new Date();
+        //           lastHour.setTime(Date.now() - delay);
+        //           lastHour = lastHour.toISOString();
+        //           const searchCriteria = ["ALL", "SINCE", lastHour];
+        //           const fetchOptions = {
+        //             bodies: [""],
+        //           };
+        //           return connection
+        //             .search(searchCriteria, fetchOptions)
+        //             .then((messages) => {
+        //               console.log("messages", messages);
+        //               messages.forEach((item) => {
+        //                 const all = _.find(item.parts, { which: "" });
+        //                 const id = item.attributes.uid;
+        //                 const idHeader = "Imap-Id: " + id + "\r\n";
 
-                        simpleParser(idHeader + all.body, async (err, mail) => {
-                          if (err) console.log(err);
+        //                 simpleParser(idHeader + all.body, async (err, mail) => {
+        //                   if (err) console.log(err);
 
-                          console.log(mail.subject);
+        //                   console.log(mail.subject);
 
-                          const answerCodeArr = mail.text
-                            .split("\n")
-                            .filter(
-                              (item) =>
-                                item &&
-                                /^\S+$/.test(item) &&
-                                !isNaN(Number(item))
-                            );
+        //                   const answerCodeArr = mail.text
+        //                     .split("\n")
+        //                     .filter(
+        //                       (item) =>
+        //                         item &&
+        //                         /^\S+$/.test(item) &&
+        //                         !isNaN(Number(item))
+        //                     );
 
-                          if (mail.text.includes("Instagram")) {
-                            if (answerCodeArr.length > 0) {
-                              // Answer code must be kept as string type and not manipulated to a number type to preserve leading zeros
-                              const answerCode = answerCodeArr[0];
-                              console.log(answerCode);
+        //                   if (mail.text.includes("Instagram")) {
+        //                     if (answerCodeArr.length > 0) {
+        //                       // Answer code must be kept as string type and not manipulated to a number type to preserve leading zeros
+        //                       const answerCode = answerCodeArr[0];
+        //                       console.log(answerCode);
 
-                              await client.updateChallenge({
-                                challengeUrl,
-                                securityCode: answerCode,
-                              });
+        //                       await client.updateChallenge({
+        //                         challengeUrl,
+        //                         securityCode: answerCode,
+        //                       });
 
-                              console.log(
-                                `Answered Instagram security challenge with answer code: ${answerCode}`
-                              );
+        //                       console.log(
+        //                         `Answered Instagram security challenge with answer code: ${answerCode}`
+        //                       );
 
-                              await client.login();
+        //                       await client.login();
 
-                              await instagramPostPictureFunction();
-                            }
-                          }
-                        });
-                      });
-                    });
-                });
-              });
-            }, timeout);
-          } catch (error) {
-            console.log("imaps error", error);
-          }
-        };
-        await delayedEmailFunction(45000);
+        //                       await instagramPostPictureFunction();
+        //                     }
+        //                   }
+        //                 });
+        //               });
+        //             });
+        //         });
+        //       });
+        //     }, timeout);
+        //   } catch (error) {
+        //     console.log("imaps error", error);
+        //   }
+        // };
+        // await delayedEmailFunction(45000);
       }
     }
   };
