@@ -237,6 +237,10 @@ cron.schedule("59 15 * * *", async () => {
   await instagramLoginFunction();
 });
 
+app.get("/", async function (req, res) {
+  res.send("API is working properly").json({ message: "Success" });
+});
+
 app.listen(port, () => {
   console.log(`Listening on port ${port}...`);
 });
