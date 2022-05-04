@@ -238,7 +238,8 @@ cron.schedule("59 14 * * *", async () => {
 });
 
 app.get("/", async function (req, res) {
-  res.send("API is working properly").json({ message: "Success" });
+  res.send("API is working properly");
+  // .json({ message: "Success" });
 });
 
 app.listen(port, () => {
