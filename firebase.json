@@ -8,7 +8,7 @@
         "destination": "/index.html"
       },
       {
-        "source": "/",
+        "source": "/test",
         "destination": "index"
       }
     ],
