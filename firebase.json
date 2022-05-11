@@ -9,7 +9,7 @@
       },
       {
         "source": "/test",
-        "destination": "index"
+        "destination": "app"
       }
     ],
     "redirects": []
