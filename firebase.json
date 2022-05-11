@@ -5,7 +5,11 @@
     "rewrites": [
       {
         "source": "**",
-        "destination": "index.js"
+        "destination": "/index.html"
+      },
+      {
+        "source": "/",
+        "destination": "index"
       }
     ],
     "redirects": []
