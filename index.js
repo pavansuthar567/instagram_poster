@@ -79,10 +79,10 @@ cron.schedule("59 14 * * *", async () => {
       },
       {
         language: "en-US",
-        proxy:
-          process.env.NODE_ENV === "production"
-            ? process.env.FIXIE_URL
-            : undefined,
+        // proxy:
+        //   process.env.NODE_ENV === "production"
+        //     ? process.env.FIXIE_URL
+        //     : undefined,
       }
     );
 
