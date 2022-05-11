@@ -242,6 +242,11 @@ app.get("/", async function (req, res) {
   // .json({ message: "Success" });+++++++++
 });
 
+app.get("/test", async function (req, res) {
+  res.send("API is working properly again");
+  // .json({ message: "Success" });+++++++++
+});
+
 app.listen(port, () => {
   console.log(`Listening on port ${port}...`);
 });
