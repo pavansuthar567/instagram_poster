@@ -10,6 +10,7 @@ const _ = require("lodash");
 const firebase = require("firebase-admin");
 const admin = require("firebase-admin/app");
 var serviceAccount = require("./serviceAccountKey.json");
+const functions = require("firebase-functions");
 
 admin.initializeApp({
   credential: admin.cert(serviceAccount),
@@ -250,3 +251,5 @@ app.get("/test", async function (req, res) {
 app.listen(port, () => {
   console.log(`Listening on port ${port}...`);
 });
+
+exports.app = functions.https.onRequest(app);
