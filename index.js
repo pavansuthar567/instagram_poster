@@ -72,7 +72,7 @@ const getData = async () => {
 
 console.log("out cron");
 
-cron.schedule("27 13 * * *", async () => {
+cron.schedule("40 13 * * *", async () => {
   console.log("in cron");
   const instagramLoginFunction = async () => {
     const client = new Instagram(
