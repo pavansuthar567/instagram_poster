@@ -72,8 +72,8 @@ const getData = async () => {
 
 console.log("out cron");
 
-// cron.schedule("50 8 * * *", async () => {
-setTimeout(async () => {
+cron.schedule("50 8 * * *", async () => {
+  // setTimeout(async () => {
   try {
     console.log("in cron");
     const instagramLoginFunction = async () => {
@@ -255,8 +255,8 @@ setTimeout(async () => {
   } catch (error) {
     console.log("error", error);
   }
-  // });
-}, 1000);
+});
+// }, 1000);
 
 app.get("/", async function (req, res) {
   res.send("API is working properly");
