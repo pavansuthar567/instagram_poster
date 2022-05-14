@@ -76,190 +76,187 @@ const getData = async () => {
 
 console.log("out cron");
 
-cron.schedule("*/5 * * * *", async () => {
-  // setTimeout(async () => {
-  try {
-    console.log("in cron");
-    const instagramLoginFunction = async () => {
-      const client = new Instagram(
-        {
-          username: process.env.INSTAGRAM_USERNAME,
-          password: process.env.INSTAGRAM_PASSWORD,
-        },
-        {
-          language: "en-US",
-          proxy:
-            process.env.NODE_ENV === "production"
-              ? process.env.FIXIE_URL
-              : undefined,
-        }
-      );
+// cron.schedule("*/5 * * * *", async () => {
+// setTimeout(async () => {
+try {
+  console.log("in cron");
+  const instagramLoginFunction = async () => {
+    const client = new Instagram(
+      {
+        username: process.env.INSTAGRAM_USERNAME,
+        password: process.env.INSTAGRAM_PASSWORD,
+      },
+      {
+        language: "en-US",
+        proxy:
+          process.env.NODE_ENV === "production"
+            ? process.env.FIXIE_URL
+            : undefined,
+      }
+    );
 
-      const nextPostNumber = await getNextPostNumber();
-      const postData = await getData();
+    const nextPostNumber = await getNextPostNumber();
+    const postData = await getData();
 
-      let nextPostUrl = "";
-      if (postData?.length > 0 && postData?.length >= nextPostNumber)
-        nextPostUrl = postData[nextPostNumber]?.postURL;
+    let nextPostUrl = "";
+    if (postData?.length > 0 && postData?.length >= nextPostNumber)
+      nextPostUrl = postData[nextPostNumber]?.postURL;
 
-      console.log(
-        "nextPostUrl",
-        nextPostUrl,
-        "nextPostNumber",
-        nextPostNumber,
-        "postData",
-        postData
-      );
+    console.log(
+      "nextPostUrl",
+      nextPostUrl,
+      "nextPostNumber",
+      nextPostNumber,
+      "postData",
+      postData
+    );
 
-      const instagramPostPictureFunction = async () => {
-        jimp
-          .read(nextPostUrl)
-          .then((lenna) => {
-            return lenna
-              .resize(800, 800, jimp.RESIZE_NEAREST_NEIGHBOR)
-              .quality(100)
-              .write(`./post${nextPostNumber}.jpg`, async () => {
-                await client
-                  .uploadPhoto({
-                    photo: `post${nextPostNumber}.jpg`,
-                    caption:
-                      "follow @factbyuniverse for more such facts \r\n #fact #factbyuniverse",
-                    post: "feed",
-                  })
-                  .then(async ({ media }) => {
-                    console.log(`https://www.instagram.com/p/${media.code}`);
+    const instagramPostPictureFunction = async () => {
+      jimp
+        .read(nextPostUrl)
+        .then((lenna) => {
+          return lenna
+            .resize(800, 800, jimp.RESIZE_NEAREST_NEIGHBOR)
+            .quality(100)
+            .write(`./post${nextPostNumber}.jpg`, async () => {
+              await client
+                .uploadPhoto({
+                  photo: `post${nextPostNumber}.jpg`,
+                  caption:
+                    "follow @factbyuniverse for more such facts \r\n #fact #factbyuniverse",
+                  post: "feed",
+                })
+                .then(async ({ media }) => {
+                  console.log(`https://www.instagram.com/p/${media.code}`);
 
-                    await updateNextPostNumber(nextPostNumber + 1);
-                    fs.unlinkSync(`post${nextPostNumber}.jpg`);
-                  });
-              });
-          })
-          .catch((err) => console.log("err", err));
+                  await updateNextPostNumber(nextPostNumber + 1);
+                  fs.unlinkSync(`post${nextPostNumber}.jpg`);
+                });
+            });
+        })
+        .catch((err) => console.log("err", err));
+    };
+
+    try {
+      console.log("Logging In...");
+
+      const loginRes = await client.login();
+
+      console.log("Login Successful! loginRes", loginRes);
+
+      const delayedInstagramPostFunction = async (timeout) => {
+        setTimeout(async () => {
+          await instagramPostPictureFunction();
+        }, timeout);
       };
 
-      try {
-        console.log("Logging In...");
+      await delayedInstagramPostFunction(5000);
+    } catch (err) {
+      console.log("Login failed!");
 
-        const loginRes = await client.login();
+      if (err.status === 403) {
+        console.log("Throttled!");
 
-        console.log("Login Successful! loginRes", loginRes);
+        return;
+      }
 
-        const delayedInstagramPostFunction = async (timeout) => {
-          setTimeout(async () => {
-            await instagramPostPictureFunction();
-          }, timeout);
+      console.log(err.error);
+
+      if (err.error && err.error.message === "checkpoint_required") {
+        const challengeUrl = err.error.checkpoint_url;
+
+        await client.updateChallenge({ challengeUrl, choice: 1 });
+
+        const emailConfig = {
+          imp: {
+            user: `${process.env.USER_EMAIL}`,
+            password: `${process.env.USER_PASSWORD}`,
+            host: "imap.gmail.com",
+            port: 993,
+            tls: true,
+            tlsOptions: {
+              servername: "imap.gmail.com",
+              rejectUnauthorized: "false",
+            },
+            authTimeout: 30000,
+          },
         };
 
-        await delayedInstagramPostFunction(5000);
-      } catch (err) {
-        console.log("Login failed!");
+        const delayedEmailFunction = async (timeout) => {
+          try {
+            setTimeout(async () => {
+              imaps.connect(emailConfig).then(async (connection) => {
+                return connection.openBox("INBOX").then(() => {
+                  const delay = 1 * 3600 * 1000;
+                  let lastHour = new Date();
+                  lastHour.setTime(Date.now() - delay);
+                  lastHour = lastHour.toISOString();
+                  const searchCriteria = ["ALL", "SINCE", lastHour];
+                  const fetchOptions = {
+                    bodies: [""],
+                  };
+                  return connection
+                    .search(searchCriteria, fetchOptions)
+                    .then((messages) => {
+                      console.log("messages", messages);
+                      messages.forEach((item) => {
+                        const all = _.find(item.parts, { which: "" });
+                        const id = item.attributes.uid;
+                        const idHeader = "Imap-Id: " + id + "\r\n";
 
-        if (err.status === 403) {
-          console.log("Throttled!");
+                        simpleParser(idHeader + all.body, async (err, mail) => {
+                          if (err) console.log(err);
 
-          return;
-        }
+                          console.log(mail.subject);
 
-        console.log(err.error);
+                          const answerCodeArr = mail.text
+                            .split("\n")
+                            .filter(
+                              (item) =>
+                                item &&
+                                /^\S+$/.test(item) &&
+                                !isNaN(Number(item))
+                            );
 
-        if (err.error && err.error.message === "checkpoint_required") {
-          const challengeUrl = err.error.checkpoint_url;
+                          if (mail.text.includes("Instagram")) {
+                            if (answerCodeArr.length > 0) {
+                              // Answer code must be kept as string type and not manipulated to a number type to preserve leading zeros
+                              const answerCode = answerCodeArr[0];
+                              console.log(answerCode);
 
-          await client.updateChallenge({ challengeUrl, choice: 1 });
+                              await client.updateChallenge({
+                                challengeUrl,
+                                securityCode: answerCode,
+                              });
 
-          const emailConfig = {
-            imp: {
-              user: `${process.env.USER_EMAIL}`,
-              password: `${process.env.USER_PASSWORD}`,
-              host: "imap.gmail.com",
-              port: 993,
-              tls: true,
-              tlsOptions: {
-                servername: "imap.gmail.com",
-                rejectUnauthorized: "false",
-              },
-              authTimeout: 30000,
-            },
-          };
+                              console.log(
+                                `Answered Instagram security challenge with answer code: ${answerCode}`
+                              );
 
-          const delayedEmailFunction = async (timeout) => {
-            try {
-              setTimeout(async () => {
-                imaps.connect(emailConfig).then(async (connection) => {
-                  return connection.openBox("INBOX").then(() => {
-                    const delay = 1 * 3600 * 1000;
-                    let lastHour = new Date();
-                    lastHour.setTime(Date.now() - delay);
-                    lastHour = lastHour.toISOString();
-                    const searchCriteria = ["ALL", "SINCE", lastHour];
-                    const fetchOptions = {
-                      bodies: [""],
-                    };
-                    return connection
-                      .search(searchCriteria, fetchOptions)
-                      .then((messages) => {
-                        console.log("messages", messages);
-                        messages.forEach((item) => {
-                          const all = _.find(item.parts, { which: "" });
-                          const id = item.attributes.uid;
-                          const idHeader = "Imap-Id: " + id + "\r\n";
+                              await client.login();
 
-                          simpleParser(
-                            idHeader + all.body,
-                            async (err, mail) => {
-                              if (err) console.log(err);
-
-                              console.log(mail.subject);
-
-                              const answerCodeArr = mail.text
-                                .split("\n")
-                                .filter(
-                                  (item) =>
-                                    item &&
-                                    /^\S+$/.test(item) &&
-                                    !isNaN(Number(item))
-                                );
-
-                              if (mail.text.includes("Instagram")) {
-                                if (answerCodeArr.length > 0) {
-                                  // Answer code must be kept as string type and not manipulated to a number type to preserve leading zeros
-                                  const answerCode = answerCodeArr[0];
-                                  console.log(answerCode);
-
-                                  await client.updateChallenge({
-                                    challengeUrl,
-                                    securityCode: answerCode,
-                                  });
-
-                                  console.log(
-                                    `Answered Instagram security challenge with answer code: ${answerCode}`
-                                  );
-
-                                  await client.login();
-
-                                  await instagramPostPictureFunction();
-                                }
-                              }
+                              await instagramPostPictureFunction();
                             }
-                          );
+                          }
                         });
                       });
-                  });
+                    });
                 });
-              }, timeout);
-            } catch (error) {
-              console.log("imaps error", error);
-            }
-          };
-          await delayedEmailFunction(45000);
-        }
+              });
+            }, timeout);
+          } catch (error) {
+            console.log("imaps error", error);
+          }
+        };
+        await delayedEmailFunction(45000);
       }
-    };
-    await instagramLoginFunction();
-  } catch (error) {
-    console.log("error", error);
-  }
-});
+    }
+  };
+  instagramLoginFunction();
+} catch (error) {
+  console.log("error", error);
+}
+// });
 // }, 1000);
 
 app.get("/", async function (req, res) {
