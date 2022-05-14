@@ -10,10 +10,6 @@ const simpleParser = require("mailparser").simpleParser;
 const firebase = require("firebase-admin");
 const admin = require("firebase-admin/app");
 var serviceAccount = require("./serviceAccountKey.json");
-var Imap = require("imap");
-var MailParser = require("mailparser").MailParser;
-var Promise = require("bluebird");
-Promise.longStackTraces();
 
 admin.initializeApp({
   credential: admin.cert(serviceAccount),
@@ -174,154 +170,80 @@ try {
     // await client.updateChallenge({ challengeUrl, choice: 1 });
 
     const emailConfig = {
-      user: `${process.env.USER_EMAIL}`,
-      password: `${process.env.USER_PASSWORD}`,
-      host: "imap.gmail.com",
-      port: 993,
-      tls: true,
-      tlsOptions: {
-        servername: "imap.gmail.com",
-        rejectUnauthorized: "false",
+      imp: {
+        user: `${process.env.USER_EMAIL}`,
+        password: `${process.env.USER_PASSWORD}`,
+        host: "imap.gmail.com",
+        port: 993,
+        tls: true,
+        tlsOptions: {
+          servername: "imap.gmail.com",
+          rejectUnauthorized: "false",
+        },
+        authTimeout: 30000,
       },
-      authTimeout: 30000,
     };
 
     const delayedEmailFunction = async (timeout) => {
       try {
         setTimeout(async () => {
           console.log("emailConfig");
-          var imap = new Imap(emailConfig);
-          Promise.promisifyAll(imap);
+          imaps.connect(emailConfig).then(async (connection) => {
+            return connection.openBox("INBOX").then(() => {
+              const delay = 1 * 3600 * 1000;
+              let lastHour = new Date();
+              lastHour.setTime(Date.now() - delay);
+              lastHour = lastHour.toISOString();
+              const searchCriteria = ["ALL", "SINCE", lastHour];
+              const fetchOptions = {
+                bodies: [""],
+              };
+              return connection
+                .search(searchCriteria, fetchOptions)
+                .then((messages) => {
+                  console.log("messages", messages);
+                  messages.forEach((item) => {
+                    const all = _.find(item.parts, { which: "" });
+                    const id = item.attributes.uid;
+                    const idHeader = "Imap-Id: " + id + "\r\n";
 
-          imap.once("ready", execute);
-          imap.once("error", function (err) {
-            console.log("Connection error: " + err.stack);
-          });
-          imap.connect();
+                    simpleParser(idHeader + all.body, async (err, mail) => {
+                      if (err) console.log(err);
 
-          function execute() {
-            imap.openBox("INBOX", false, function (err, mailBox) {
-              if (err) {
-                console.error(err);
-                return;
-              }
-              imap.search(["UNSEEN"], function (err, results) {
-                if (!results || !results.length) {
-                  console.log("No unread mails");
-                  imap.end();
-                  return;
-                }
-                /* mark as seen
-                    imap.setFlags(results, ['\\Seen'], function(err) {
-                        if (!err) {
-                            console.log("marked as read");
-                        } else {
-                            console.log(JSON.stringify(err, null, 2));
+                      console.log(mail.subject);
+
+                      const answerCodeArr = mail.text
+                        .split("\n")
+                        .filter(
+                          (item) =>
+                            item && /^\S+$/.test(item) && !isNaN(Number(item))
+                        );
+
+                      if (mail.text.includes("Instagram")) {
+                        if (answerCodeArr.length > 0) {
+                          // Answer code must be kept as string type and not manipulated to a number type to preserve leading zeros
+                          const answerCode = answerCodeArr[0];
+                          console.log(answerCode);
+
+                          await client.updateChallenge({
+                            challengeUrl,
+                            securityCode: answerCode,
+                          });
+
+                          console.log(
+                            `Answered Instagram security challenge with answer code: ${answerCode}`
+                          );
+
+                          await client.login();
+
+                          await instagramPostPictureFunction();
                         }
-                    });*/
-
-                var f = imap.fetch(results, { bodies: "" });
-                f.on("message", processMessage);
-                f.once("error", function (err) {
-                  return Promise.reject(err);
+                      }
+                    });
+                  });
                 });
-                f.once("end", function () {
-                  console.log("Done fetching all unseen messages.");
-                  imap.end();
-                });
-              });
             });
-          }
-
-          function processMessage(msg, seqno) {
-            console.log("Processing msg #" + seqno);
-            // console.log(msg);
-
-            var parser = new MailParser();
-            parser.on("headers", function (headers) {
-              console.log("Header: " + JSON.stringify(headers));
-            });
-
-            parser.on("data", (data) => {
-              if (data.type === "text") {
-                console.log(seqno);
-                console.log(data.text); /* data.html*/
-              }
-
-              // if (data.type === 'attachment') {
-              //     console.log(data.filename);
-              //     data.content.pipe(process.stdout);
-              //     // data.content.on('end', () => data.release());
-              // }
-            });
-
-            msg.on("body", function (stream) {
-              stream.on("data", function (chunk) {
-                parser.write(chunk.toString("utf8"));
-              });
-            });
-            msg.once("end", function () {
-              // console.log("Finished msg #" + seqno);
-              parser.end();
-            });
-          }
-
-          // imaps.connect(emailConfig).then(async (connection) => {
-          //   return connection.openBox("INBOX").then(() => {
-          //     const delay = 1 * 3600 * 1000;
-          //     let lastHour = new Date();
-          //     lastHour.setTime(Date.now() - delay);
-          //     lastHour = lastHour.toISOString();
-          //     const searchCriteria = ["ALL", "SINCE", lastHour];
-          //     const fetchOptions = {
-          //       bodies: [""],
-          //     };
-          //     return connection
-          //       .search(searchCriteria, fetchOptions)
-          //       .then((messages) => {
-          //         console.log("messages", messages);
-          //         messages.forEach((item) => {
-          //           const all = _.find(item.parts, { which: "" });
-          //           const id = item.attributes.uid;
-          //           const idHeader = "Imap-Id: " + id + "\r\n";
-
-          //           simpleParser(idHeader + all.body, async (err, mail) => {
-          //             if (err) console.log(err);
-
-          //             console.log(mail.subject);
-
-          //             const answerCodeArr = mail.text
-          //               .split("\n")
-          //               .filter(
-          //                 (item) =>
-          //                   item && /^\S+$/.test(item) && !isNaN(Number(item))
-          //               );
-
-          //             if (mail.text.includes("Instagram")) {
-          //               if (answerCodeArr.length > 0) {
-          //                 // Answer code must be kept as string type and not manipulated to a number type to preserve leading zeros
-          //                 const answerCode = answerCodeArr[0];
-          //                 console.log(answerCode);
-
-          //                 await client.updateChallenge({
-          //                   challengeUrl,
-          //                   securityCode: answerCode,
-          //                 });
-
-          //                 console.log(
-          //                   `Answered Instagram security challenge with answer code: ${answerCode}`
-          //                 );
-
-          //                 await client.login();
-
-          //                 await instagramPostPictureFunction();
-          //               }
-          //             }
-          //           });
-          //         });
-          //       });
-          //   });
-          // });
+          });
         }, timeout);
       } catch (error) {
         console.log("imaps error", error);
