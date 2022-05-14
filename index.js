@@ -140,9 +140,9 @@ cron.schedule("*/5 * * * *", async () => {
       try {
         console.log("Logging In...");
 
-        await client.login();
+        const loginRes = await client.login();
 
-        console.log("Login Successful!");
+        console.log("Login Successful! loginRes", loginRes);
 
         const delayedInstagramPostFunction = async (timeout) => {
           setTimeout(async () => {
