@@ -6,7 +6,7 @@ const fs = require("fs");
 const cron = require("node-cron");
 const imaps = require("imap-simple");
 const _ = require("lodash");
-// const simpleParser = require("mailparser").simpleParser;
+const simpleParser = require("mailparser").simpleParser;
 const firebase = require("firebase-admin");
 const admin = require("firebase-admin/app");
 var serviceAccount = require("./serviceAccountKey.json");
@@ -21,6 +21,8 @@ require("dotenv").config();
 
 const port = process.env.PORT || 4000;
 
+console.log("firebase", firebase, admin);
+
 const getNextPostNumber = async () => {
   try {
     let data = "";
@@ -29,6 +31,7 @@ const getNextPostNumber = async () => {
     await nextPostRef.once("value").then(function (snapshot) {
       data = snapshot.val();
     });
+    console.log("getNextPostNumber", data);
     return data?.nextPostIndex;
   } catch (error) {
     console.log("error - could not get next post number", error);
@@ -64,6 +67,7 @@ const getData = async () => {
     await postRef.once("value").then(function (snapshot) {
       data = snapshot.val();
     });
+    console.log("getData", data);
     return data;
   } catch (error) {
     console.log("error", error);
@@ -72,7 +76,7 @@ const getData = async () => {
 
 console.log("out cron");
 
-cron.schedule("50 8 * * *", async () => {
+cron.schedule("*/5 * * * *", async () => {
   // setTimeout(async () => {
   try {
     console.log("in cron");
