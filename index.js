@@ -338,7 +338,7 @@ try {
 // });
 // }, 1000);
 
-app.post("/", async function (req, res) {
+app.get("/", async function (req, res) {
   res.send("API is working properly");
   // .json({ message: "Success" });+++++++++
 });
