@@ -24,8 +24,117 @@ admin.initializeApp({
 require("dotenv").config();
 
 const port = process.env.PORT || 4000;
+let answerCode;
 
-console.log("firebase", firebase, admin);
+// console.log("firebase", firebase, admin);
+
+const readline = require("readline");
+const { google } = require("googleapis");
+
+// If modifying these scopes, delete token.json.
+const SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"];
+// The file token.json stores the user's access and refresh tokens, and is
+// created automatically when the authorization flow completes for the first
+// time.
+const TOKEN_PATH = "token.json";
+
+let oAuth2Client;
+/**
+ * Create an OAuth2 client with the given credentials, and then execute the
+ * given callback function.
+ * @param {Object} credentials The authorization client credentials.
+ * @param {function} callback The callback to call with the authorized client.
+ */
+async function authorize(credentials, callback) {
+  const { client_secret, client_id, redirect_uris } = credentials.web;
+  // const {client_secret, client_id, redirect_uris} = credentials.installed;
+
+  oAuth2Client = new google.auth.OAuth2(
+    client_id,
+    client_secret,
+    redirect_uris[0]
+  );
+
+  // Check if we have previously stored a token.
+  fs.readFile(TOKEN_PATH, (err, token) => {
+    if (err) return getNewToken(oAuth2Client, callback);
+    oAuth2Client.setCredentials(JSON.parse(token));
+    callback(oAuth2Client);
+  });
+}
+
+/**
+ * Get and store new token after prompting for user authorization, and then
+ * execute the given callback with the authorized OAuth2 client.
+ * @param {google.auth.OAuth2} oAuth2Client The OAuth2 client to get token for.
+ * @param {getEventsCallback} callback The callback for the authorized client.
+ */
+function getNewToken(oAuth2Client, callback) {
+  const authUrl = oAuth2Client.generateAuthUrl({
+    access_type: "offline",
+    scope: SCOPES,
+  });
+  console.log("Authorize this app by visiting this url:", authUrl);
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  rl.question("Enter the code from that page here: ", (code) => {
+    rl.close();
+    oAuth2Client.getToken(code, (err, token) => {
+      if (err) return console.error("Error retrieving access token", err);
+      oAuth2Client.setCredentials(token);
+      // Store the token to disk for later program executions
+      fs.writeFile(TOKEN_PATH, JSON.stringify(token), (err) => {
+        if (err) return console.error(err);
+        console.log("Token stored to", TOKEN_PATH);
+      });
+      callback(oAuth2Client);
+    });
+  });
+}
+
+/**
+ * Lists the labels in the user's account.
+ *
+ * @param {google.auth.OAuth2} auth An authorized OAuth2 client.
+ */
+async function getAnswerCode(auth) {
+  const gmail = google.gmail({ version: "v1", auth });
+  let messageId;
+
+  const query = "label:inbox From:Instagram <security@mail.instagram.com>";
+
+  await gmail.users.messages.list(
+    {
+      userId: "me",
+      q: query,
+    },
+    async (err, res) => {
+      if (err) return console.log("The API returned an error: " + err);
+      const messages = res.data;
+      messageId = messages?.messages?.[0]?.id;
+      await gmail.users.messages.get(
+        {
+          userId: "me",
+          id: messageId,
+        },
+        (err, res) => {
+          if (err) return console.log("The API returned an error: =====" + err);
+          const messageBody = res.data;
+          const answerCodeArr = messageBody?.snippet
+            ?.split(" ")
+            ?.filter(
+              (item) => item && /^\S+$/.test(item) && !isNaN(Number(item))
+            );
+          answerCode = answerCodeArr[0];
+          console.log(answerCode);
+          console.log("answerCode", answerCode);
+        }
+      );
+    }
+  );
+}
 
 const getNextPostNumber = async () => {
   try {
@@ -35,7 +144,7 @@ const getNextPostNumber = async () => {
     await nextPostRef.once("value").then(function (snapshot) {
       data = snapshot.val();
     });
-    console.log("getNextPostNumber", data);
+    // console.log("getNextPostNumber", data);
     return data?.nextPostIndex;
   } catch (error) {
     console.log("error - could not get next post number", error);
@@ -71,7 +180,7 @@ const getData = async () => {
     await postRef.once("value").then(function (snapshot) {
       data = snapshot.val();
     });
-    console.log("getData", data);
+    // console.log("getData", data);
     return data;
   } catch (error) {
     console.log("error", error);
@@ -110,9 +219,9 @@ try {
       "nextPostUrl",
       nextPostUrl,
       "nextPostNumber",
-      nextPostNumber,
-      "postData",
-      postData
+      nextPostNumber
+      // "postData",
+      // postData
     );
 
     const instagramPostPictureFunction = async () => {
@@ -141,196 +250,68 @@ try {
         .catch((err) => console.log("err", err));
     };
 
-    // try {
-    //   console.log("Logging In...");
+    try {
+      console.log("Logging In...");
 
-    //   const loginRes = await client.login();
+      const loginRes = await client.login();
 
-    //   console.log("Login Successful! loginRes", loginRes);
+      console.log("Login Successful! loginRes", loginRes);
 
-    //   const delayedInstagramPostFunction = async (timeout) => {
-    //     setTimeout(async () => {
-    //       await instagramPostPictureFunction();
-    //     }, timeout);
-    //   };
-
-    //   await delayedInstagramPostFunction(5000);
-    // } catch (err) {
-    // console.log("Login failed!");
-
-    // if (err.status === 403) {
-    //   console.log("Throttled!");
-
-    //   return;
-    // }
-
-    // console.log(err.error);
-
-    // if (err.error && err.error.message === "checkpoint_required") {
-    const challengeUrl =
-      // err.error.checkpoint_url ||
-      "/challenge/action/AXH6WTQ6dTU71SeFitKLK8v01EQUNFUS-LEXN61uLpaXTk-rBXmTYQA94R7RZcaZGNQfHQo/Egbthap7HUMo3AT0/ffc_y69WUKVMSw8qcoVbcQCAQXKmjOPoJBSAbSIFIDzRvFGI6KNfhIOyG4uG4LaNHeRR/";
-
-    // await client.updateChallenge({ challengeUrl, choice: 1 });
-
-    const emailConfig = {
-      user: `${process.env.USER_EMAIL}`,
-      password: `${process.env.USER_PASSWORD}`,
-      host: "imap.gmail.com",
-      port: 993,
-      tls: true,
-      tlsOptions: {
-        servername: "imap.gmail.com",
-        rejectUnauthorized: "false",
-      },
-      authTimeout: 30000,
-    };
-
-    const delayedEmailFunction = async (timeout) => {
-      try {
+      const delayedInstagramPostFunction = async (timeout) => {
         setTimeout(async () => {
-          console.log("emailConfig");
-          var imap = new Imap(emailConfig);
-          Promise.promisifyAll(imap);
-
-          imap.once("ready", execute);
-          imap.once("error", function (err) {
-            console.log("Connection error: " + err.stack);
-          });
-          imap.connect();
-
-          function execute() {
-            imap.openBox("INBOX", false, function (err, mailBox) {
-              if (err) {
-                console.error(err);
-                return;
-              }
-              imap.search(["UNSEEN"], function (err, results) {
-                if (!results || !results.length) {
-                  console.log("No unread mails");
-                  imap.end();
-                  return;
-                }
-                /* mark as seen
-                    imap.setFlags(results, ['\\Seen'], function(err) {
-                        if (!err) {
-                            console.log("marked as read");
-                        } else {
-                            console.log(JSON.stringify(err, null, 2));
-                        }
-                    });*/
-
-                var f = imap.fetch(results, { bodies: "" });
-                f.on("message", processMessage);
-                f.once("error", function (err) {
-                  return Promise.reject(err);
-                });
-                f.once("end", function () {
-                  console.log("Done fetching all unseen messages.");
-                  imap.end();
-                });
-              });
-            });
-          }
-
-          function processMessage(msg, seqno) {
-            console.log("Processing msg #" + seqno);
-            // console.log(msg);
-
-            var parser = new MailParser();
-            parser.on("headers", function (headers) {
-              console.log("Header: " + JSON.stringify(headers));
-            });
-
-            parser.on("data", (data) => {
-              if (data.type === "text") {
-                console.log(seqno);
-                console.log(data.text); /* data.html*/
-              }
-
-              // if (data.type === 'attachment') {
-              //     console.log(data.filename);
-              //     data.content.pipe(process.stdout);
-              //     // data.content.on('end', () => data.release());
-              // }
-            });
-
-            msg.on("body", function (stream) {
-              stream.on("data", function (chunk) {
-                parser.write(chunk.toString("utf8"));
-              });
-            });
-            msg.once("end", function () {
-              // console.log("Finished msg #" + seqno);
-              parser.end();
-            });
-          }
-
-          // imaps.connect(emailConfig).then(async (connection) => {
-          //   return connection.openBox("INBOX").then(() => {
-          //     const delay = 1 * 3600 * 1000;
-          //     let lastHour = new Date();
-          //     lastHour.setTime(Date.now() - delay);
-          //     lastHour = lastHour.toISOString();
-          //     const searchCriteria = ["ALL", "SINCE", lastHour];
-          //     const fetchOptions = {
-          //       bodies: [""],
-          //     };
-          //     return connection
-          //       .search(searchCriteria, fetchOptions)
-          //       .then((messages) => {
-          //         console.log("messages", messages);
-          //         messages.forEach((item) => {
-          //           const all = _.find(item.parts, { which: "" });
-          //           const id = item.attributes.uid;
-          //           const idHeader = "Imap-Id: " + id + "\r\n";
-
-          //           simpleParser(idHeader + all.body, async (err, mail) => {
-          //             if (err) console.log(err);
-
-          //             console.log(mail.subject);
-
-          //             const answerCodeArr = mail.text
-          //               .split("\n")
-          //               .filter(
-          //                 (item) =>
-          //                   item && /^\S+$/.test(item) && !isNaN(Number(item))
-          //               );
-
-          //             if (mail.text.includes("Instagram")) {
-          //               if (answerCodeArr.length > 0) {
-          //                 // Answer code must be kept as string type and not manipulated to a number type to preserve leading zeros
-          //                 const answerCode = answerCodeArr[0];
-          //                 console.log(answerCode);
-
-          //                 await client.updateChallenge({
-          //                   challengeUrl,
-          //                   securityCode: answerCode,
-          //                 });
-
-          //                 console.log(
-          //                   `Answered Instagram security challenge with answer code: ${answerCode}`
-          //                 );
-
-          //                 await client.login();
-
-          //                 await instagramPostPictureFunction();
-          //               }
-          //             }
-          //           });
-          //         });
-          //       });
-          //   });
-          // });
+          await instagramPostPictureFunction();
         }, timeout);
-      } catch (error) {
-        console.log("imaps error", error);
+      };
+
+      if (loginRes?.authenticated) await delayedInstagramPostFunction(5000);
+    } catch (err) {
+      console.log("Login failed!");
+
+      if (err.status === 403) {
+        console.log("Throttled!");
+
+        return;
       }
-    };
-    await delayedEmailFunction(1000);
+
+      console.log("err.error", err.error, "err", err);
+
+      if (err.error && err.error.message === "checkpoint_required") {
+        const challengeUrl = err.error.checkpoint_url;
+
+        await client.updateChallenge({ challengeUrl, choice: 1 });
+
+        const delayedEmailFunction = async (timeout) => {
+          try {
+            setTimeout(async () => {
+              // Load client secrets from a local file.
+              fs.readFile("credentials.json", (err, content) => {
+                if (err)
+                  return console.log("Error loading client secret file:", err);
+                // Authorize a client with credentials, then call the Gmail API.
+                authorize(JSON.parse(content), getAnswerCode);
+              });
+
+              await client.updateChallenge({
+                challengeUrl,
+                securityCode: answerCode,
+              });
+
+              console.log(
+                `Answered Instagram security challenge with answer code: ${answerCode}`
+              );
+
+              await client.login();
+
+              await instagramPostPictureFunction();
+            }, timeout);
+          } catch (error) {
+            console.log("imaps error", error);
+          }
+        };
+        await delayedEmailFunction(1000);
+      }
+    }
   };
-  // };
-  // };
   instagramLoginFunction();
 } catch (error) {
   console.log("error", error);
@@ -340,12 +321,10 @@ try {
 
 app.get("/", async function (req, res) {
   res.send("API is working properly");
-  // .json({ message: "Success" });+++++++++
 });
 
 app.get("/test", async function (req, res) {
   res.send("API is working properly again");
-  // .json({ message: "Success" });+++++++++
 });
 
 app.listen(port, () => {
