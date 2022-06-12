@@ -217,14 +217,7 @@ const instagramLoginFunction = async () => {
   if (postData?.length > 0 && postData?.length >= nextPostNumber)
     nextPostUrl = postData[nextPostNumber]?.postURL;
 
-  console.log(
-    "nextPostUrl",
-    nextPostUrl,
-    "nextPostNumber",
-    nextPostNumber
-    // "postData",
-    // postData
-  );
+  console.log("nextPostUrl", nextPostUrl, "nextPostNumber", nextPostNumber);
 
   const instagramPostPictureFunction = async () => {
     if (!nextPostUrl) return;
@@ -258,7 +251,7 @@ const instagramLoginFunction = async () => {
 
     const loginRes = await client.login();
 
-    console.log("Login Successful! loginRes", loginRes);
+    console.log("Login Response", loginRes);
 
     const delayedInstagramPostFunction = async (timeout) => {
       setTimeout(async () => {
@@ -287,18 +280,13 @@ const instagramLoginFunction = async () => {
     if (err.error && err.error.message === "checkpoint_required") {
       const challengeUrl = err.error.checkpoint_url;
 
-      // const updateChallenge =
       await client.updateChallenge({
         challengeUrl,
         choice: 1,
       });
 
-      console.log(
-        "inside checkpoint_required",
-        process.env.USER_EMAIL,
-        process.env.USER_PASSWORD
-        // updateChallenge
-      );
+      console.log("inside checkpoint_required");
+
       // const emailConfig = {
       //   imap: {
       //     user: `${process.env.USER_EMAIL}`,
@@ -431,17 +419,16 @@ const instagramLoginFunction = async () => {
   }
 };
 
-// cron.schedule("*/5 * * * *", async () => { ===================================== every five minutes
-// cron.schedule("* */2 * * *", async () => {
-setTimeout(async () => {
-  try {
-    console.log("in cron");
-    await instagramLoginFunction();
-  } catch (error) {
-    console.log("error", error);
-  }
-  // });
-}, 1000);
+cron.schedule("59 14,17,20 * * *", async () => {
+  setTimeout(async () => {
+    try {
+      console.log("in cron");
+      await instagramLoginFunction();
+    } catch (error) {
+      console.log("error", error);
+    }
+  }, 1000);
+});
 
 app.get("/", async function (req, res) {
   res.send("API is working properly");
