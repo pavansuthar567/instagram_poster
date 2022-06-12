@@ -24,6 +24,7 @@
     "lodash": "^4.17.21",
     "mailparser": "^3.5.0",
     "node-cron": "^3.0.0",
-    "nodemon": "^2.0.16"
+    "nodemon": "^2.0.16",
+    "tough-cookie-filestore2": "^1.0.0"
   }
 }

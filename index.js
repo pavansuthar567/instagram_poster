@@ -1,6 +1,7 @@
 const express = require("express");
 const app = express();
-const Instagram = require("instagram-web-api");
+const Instagram = require("./instagram-web-api/index");
+const FileCookieStore = require("tough-cookie-filestore2");
 const jimp = require("jimp");
 const fs = require("fs");
 const cron = require("node-cron");
@@ -103,7 +104,8 @@ async function getAnswerCode(auth) {
   const gmail = google.gmail({ version: "v1", auth });
   let messageId;
 
-  const query = "label:inbox From:Instagram <security@mail.instagram.com>";
+  const query =
+    "label:inbox From:Instagram <security@mail.instagram.com> To:pavan.suthar567@gmail.com Subject:(Verify your account) If this was you, please use the following code to confirm your identity:";
 
   await gmail.users.messages.list(
     {
@@ -122,13 +124,13 @@ async function getAnswerCode(auth) {
         (err, res) => {
           if (err) return console.log("The API returned an error: =====" + err);
           const messageBody = res.data;
+          console.log("messages", messages);
           const answerCodeArr = messageBody?.snippet
             ?.split(" ")
             ?.filter(
               (item) => item && /^\S+$/.test(item) && !isNaN(Number(item))
             );
           answerCode = answerCodeArr[0];
-          console.log(answerCode);
           console.log("answerCode", answerCode);
         }
       );
@@ -189,135 +191,259 @@ const getData = async () => {
 
 console.log("out cron");
 
-// cron.schedule("*/5 * * * *", async () => {
-// setTimeout(async () => {
-try {
-  console.log("in cron");
-  const instagramLoginFunction = async () => {
-    const client = new Instagram(
-      {
-        username: process.env.INSTAGRAM_USERNAME,
-        password: process.env.INSTAGRAM_PASSWORD,
-      },
-      {
-        language: "en-US",
-        proxy:
-          process.env.NODE_ENV === "production"
-            ? process.env.FIXIE_URL
-            : undefined,
-      }
-    );
+// cron.schedule("*/5 * * * *", async () => { ===================================== every five minutes
+// cron.schedule("* */2 * * *", async () => {
+setTimeout(async () => {
+  try {
+    console.log("in cron");
+    const instagramLoginFunction = async () => {
+      // Persist cookies after Instagram client log in
+      const cookieStore = new FileCookieStore("./cookies.json");
 
-    const nextPostNumber = await getNextPostNumber();
-    const postData = await getData();
+      const client = new Instagram(
+        {
+          username: process.env.INSTAGRAM_USERNAME,
+          password: process.env.INSTAGRAM_PASSWORD,
+          cookieStore,
+        },
+        {
+          language: "en-US",
+          // proxy:
+          //   process.env.NODE_ENV === "production"
+          //     ? process.env.FIXIE_URL
+          //     : undefined,
+        }
+      );
 
-    let nextPostUrl = "";
-    if (postData?.length > 0 && postData?.length >= nextPostNumber)
-      nextPostUrl = postData[nextPostNumber]?.postURL;
+      const nextPostNumber = await getNextPostNumber();
+      const postData = await getData();
 
-    console.log(
-      "nextPostUrl",
-      nextPostUrl,
-      "nextPostNumber",
-      nextPostNumber
-      // "postData",
-      // postData
-    );
+      let nextPostUrl = "";
+      if (postData?.length > 0 && postData?.length >= nextPostNumber)
+        nextPostUrl = postData[nextPostNumber]?.postURL;
 
-    const instagramPostPictureFunction = async () => {
-      jimp
-        .read(nextPostUrl)
-        .then((lenna) => {
-          return lenna
-            .resize(800, 800, jimp.RESIZE_NEAREST_NEIGHBOR)
-            .quality(100)
-            .write(`./post${nextPostNumber}.jpg`, async () => {
-              await client
-                .uploadPhoto({
-                  photo: `post${nextPostNumber}.jpg`,
-                  caption:
-                    "follow @factbyuniverse for more such facts \r\n #fact #factbyuniverse",
-                  post: "feed",
-                })
-                .then(async ({ media }) => {
-                  console.log(`https://www.instagram.com/p/${media.code}`);
+      console.log(
+        "nextPostUrl",
+        nextPostUrl,
+        "nextPostNumber",
+        nextPostNumber
+        // "postData",
+        // postData
+      );
 
-                  await updateNextPostNumber(nextPostNumber + 1);
-                  fs.unlinkSync(`post${nextPostNumber}.jpg`);
-                });
-            });
-        })
-        .catch((err) => console.log("err", err));
-    };
+      const instagramPostPictureFunction = async () => {
+        if (!nextPostUrl) return;
+        jimp
+          .read(nextPostUrl)
+          .then((lenna) => {
+            return lenna
+              .resize(800, 800, jimp.RESIZE_NEAREST_NEIGHBOR)
+              .quality(100)
+              .write(`./post${nextPostNumber}.jpg`, async () => {
+                await client
+                  .uploadPhoto({
+                    photo: `post${nextPostNumber}.jpg`,
+                    caption:
+                      "follow @factbyuniverse for more such facts \r\n #fact #factbyuniverse",
+                    post: "feed",
+                  })
+                  .then(async ({ media }) => {
+                    console.log(`https://www.instagram.com/p/${media.code}`);
 
-    try {
-      console.log("Logging In...");
-
-      const loginRes = await client.login();
-
-      console.log("Login Successful! loginRes", loginRes);
-
-      const delayedInstagramPostFunction = async (timeout) => {
-        setTimeout(async () => {
-          await instagramPostPictureFunction();
-        }, timeout);
+                    await updateNextPostNumber(nextPostNumber + 1);
+                    fs.unlinkSync(`post${nextPostNumber}.jpg`);
+                  });
+              });
+          })
+          .catch((err) => console.log("err", err));
       };
 
-      if (loginRes?.authenticated) await delayedInstagramPostFunction(5000);
-    } catch (err) {
-      console.log("Login failed!");
+      try {
+        console.log("Logging In...");
 
-      if (err.status === 403) {
-        console.log("Throttled!");
+        const loginRes = await client.login();
 
-        return;
-      }
+        console.log("Login Successful! loginRes", loginRes);
 
-      console.log("err.error", err.error, "err", err);
-
-      if (err.error && err.error.message === "checkpoint_required") {
-        const challengeUrl = err.error.checkpoint_url;
-
-        await client.updateChallenge({ challengeUrl, choice: 1 });
-
-        const delayedEmailFunction = async (timeout) => {
-          try {
-            setTimeout(async () => {
-              // Load client secrets from a local file.
-              fs.readFile("credentials.json", (err, content) => {
-                if (err)
-                  return console.log("Error loading client secret file:", err);
-                // Authorize a client with credentials, then call the Gmail API.
-                authorize(JSON.parse(content), getAnswerCode);
-              });
-
-              await client.updateChallenge({
-                challengeUrl,
-                securityCode: answerCode,
-              });
-
-              console.log(
-                `Answered Instagram security challenge with answer code: ${answerCode}`
-              );
-
-              await client.login();
-
-              await instagramPostPictureFunction();
-            }, timeout);
-          } catch (error) {
-            console.log("imaps error", error);
-          }
+        const delayedInstagramPostFunction = async (timeout) => {
+          setTimeout(async () => {
+            await instagramPostPictureFunction();
+          }, timeout);
         };
-        await delayedEmailFunction(1000);
+
+        if (loginRes?.authenticated) await delayedInstagramPostFunction(10000);
+      } catch (err) {
+        console.log("Login failed!");
+
+        const delayedLoginFunction = async (timeout) => {
+          setTimeout(async () => {
+            await client.login().then(() => instagramPostPictureFunction());
+          }, timeout);
+        };
+
+        if (err.statusCode === 403 || err.statusCode === 429) {
+          console.log("Throttled!");
+
+          await delayedLoginFunction(10000);
+        }
+
+        console.log("err.error", err.error);
+
+        if (err.error && err.error.message === "checkpoint_required") {
+          const challengeUrl = err.error.checkpoint_url;
+
+          // const updateChallenge =
+          await client.updateChallenge({
+            challengeUrl,
+            choice: 1,
+          });
+
+          console.log(
+            "inside checkpoint_required",
+            process.env.USER_EMAIL,
+            process.env.USER_PASSWORD
+            // updateChallenge
+          );
+          // const emailConfig = {
+          //   imap: {
+          //     user: `${process.env.USER_EMAIL}`,
+          //     password: `${process.env.USER_PASSWORD}`,
+          //     host: "imap.gmail.com",
+          //     port: 993,
+          //     tls: true,
+          //     tlsOptions: {
+          //       servername: "imap.gmail.com",
+          //       rejectUnauthorized: false,
+          //     },
+          //     authTimeout: 30000,
+          //   },
+          // };
+
+          const delayedEmailFunction = async (timeout) => {
+            try {
+              setTimeout(async () => {
+                // Load client secrets from a local file.
+                await fs.readFile("credentials.json", async (err, content) => {
+                  if (err)
+                    return console.log(
+                      "Error loading client secret file:",
+                      err
+                    );
+                  // Authorize a client with credentials, then call the Gmail API.
+                  await authorize(JSON.parse(content), getAnswerCode);
+
+                  if (answerCode) {
+                    await client.updateChallenge({
+                      challengeUrl,
+                      securityCode: answerCode,
+                    });
+                  }
+                  console.log(
+                    `Answered Instagram security challenge with answer code: ${answerCode}`
+                  );
+                  await client.login();
+                  await instagramPostPictureFunction();
+                });
+                // imaps.connect(emailConfig).then(async (connection) => {
+                //   return connection.openBox("INBOX").then(async () => {
+                //     // Fetch emails from the last hour
+                //     const delay = 1 * 3600 * 1000;
+                //     let lastHour = new Date();
+                //     lastHour.setTime(Date.now() - delay);
+                //     lastHour = lastHour.toISOString();
+                //     const searchCriteria = ["ALL", ["SINCE", lastHour]];
+                //     const fetchOptions = {
+                //       bodies: [""],
+                //     };
+                //     return connection
+                //       .search(searchCriteria, fetchOptions)
+                //       .then((messages) => {
+                //         messages.forEach((item) => {
+                //           const all = _.find(item.parts, { which: "" });
+                //           const id = item.attributes.uid;
+                //           const idHeader = "Imap-Id: " + id + "\r\n";
+                //           simpleParser(
+                //             idHeader + all.body,
+                //             async (err, mail) => {
+                //               if (err) {
+                //                 console.log(err);
+                //               }
+                //               console.log(mail.subject);
+                //               const answerCodeArr = mail.text
+                //                 .split("\n")
+                //                 .filter(
+                //                   (item) =>
+                //                     item &&
+                //                     /^\S+$/.test(item) &&
+                //                     !isNaN(Number(item))
+                //                 );
+                //               if (mail.text.includes("Instagram")) {
+                //                 if (answerCodeArr.length > 0) {
+                //                   // Answer code must be kept as string type and not manipulated to a number type to preserve leading zeros
+                //                   const answerCode = answerCodeArr[0];
+                //                   console.log(answerCode);
+                //                   await client.updateChallenge({
+                //                     challengeUrl,
+                //                     securityCode: answerCode,
+                //                   });
+                //                   console.log(
+                //                     `Answered Instagram security challenge with answer code: ${answerCode}`
+                //                   );
+                //                   await client.login();
+                //                   await instagramPostPictureFunction();
+                //                 }
+                //               }
+                //             }
+                //           );
+                //         });
+                //       });
+                //   });
+                // });
+              }, timeout);
+            } catch (error) {
+              console.log("imaps error", error);
+            }
+          };
+          await delayedEmailFunction(5000);
+        }
+        // Delete stored cookies, if any, and log in again
+        console.log("Logging in again and setting new cookie store");
+        fs.unlinkSync("./cookies.json");
+        const newCookieStore = new FileCookieStore("./cookies.json");
+
+        const newClient = new Instagram(
+          {
+            username: process.env.INSTAGRAM_USERNAME,
+            password: process.env.INSTAGRAM_PASSWORD,
+            cookieStore: newCookieStore,
+          },
+          {
+            language: "en-US",
+          }
+        );
+
+        const delayedNewLoginFunction = async (timeout) => {
+          setTimeout(async () => {
+            console.log("Logging in again");
+            await newClient
+              .login()
+              .then(() => instagramPostPictureFunction())
+              .catch((err) => {
+                console.log(err);
+                console.log("Login failed again!");
+              });
+          }, timeout);
+        };
+
+        await delayedNewLoginFunction(10000);
       }
-    }
-  };
-  instagramLoginFunction();
-} catch (error) {
-  console.log("error", error);
-}
-// });
-// }, 1000);
+    };
+    await instagramLoginFunction();
+  } catch (error) {
+    console.log("error", error);
+  }
+  // });
+}, 1000);
 
 app.get("/", async function (req, res) {
   res.send("API is working properly");
