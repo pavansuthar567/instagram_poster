@@ -450,6 +450,7 @@ app.get("/", async function (req, res) {
 });
 
 app.get("/test", async function (req, res) {
+  await instagramLoginFunction();
   res.send("API is working properly again");
 });
 
