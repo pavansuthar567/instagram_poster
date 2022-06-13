@@ -419,7 +419,7 @@ const instagramLoginFunction = async () => {
   }
 };
 
-cron.schedule("39 12,15,18 * * *", async () => {
+cron.schedule("39 9,12,15 * * *", async () => {
   setTimeout(async () => {
     try {
       console.log("in cron");
