@@ -214,8 +214,11 @@ const instagramLoginFunction = async () => {
   const postData = await getData();
 
   let nextPostUrl = "";
-  if (postData?.length > 0 && postData?.length >= nextPostNumber)
+  let hashtagStr = "";
+  if (postData?.length > 0 && postData?.length >= nextPostNumber) {
     nextPostUrl = postData[nextPostNumber]?.postURL;
+    hashtagStr = postData[nextPostNumber]?.hashtagStr;
+  }
 
   console.log("nextPostUrl", nextPostUrl, "nextPostNumber", nextPostNumber);
 
@@ -231,8 +234,7 @@ const instagramLoginFunction = async () => {
             await client
               .uploadPhoto({
                 photo: `post${nextPostNumber}.jpg`,
-                caption:
-                  "follow @factbyuniverse for more such facts \r\n #fact #factbyuniverse",
+                caption: `follow @factbyuniverse for more such facts \r\n \r\n #fact #factbyuniverse ${hashtagStr}`,
                 post: "feed",
               })
               .then(async ({ media }) => {
