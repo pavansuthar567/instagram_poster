@@ -142,12 +142,12 @@ const getNextPostNumber = async () => {
   try {
     let data = "";
     const db = firebase.database();
-    const nextPostRef = db.ref("nextPostData");
+    const nextPostRef = db.ref("Fact_By_Universe/nextPostIndex");
     await nextPostRef.once("value").then(function (snapshot) {
       data = snapshot.val();
     });
     // console.log("getNextPostNumber", data);
-    return data?.nextPostIndex;
+    return data;
   } catch (error) {
     console.log("error - could not get next post number", error);
   }
@@ -156,7 +156,7 @@ const getNextPostNumber = async () => {
 const updateNextPostNumber = async (nextPostIndex) => {
   try {
     const db = firebase.database();
-    const nextPostRef = db.ref("nextPostData");
+    const nextPostRef = db.ref("Fact_By_Universe");
     nextPostRef.update(
       {
         nextPostIndex: nextPostIndex,
@@ -174,11 +174,11 @@ const updateNextPostNumber = async (nextPostIndex) => {
   }
 };
 
-const getData = async () => {
+const getData = async (nextPostNumber) => {
   try {
     let data = {};
     const db = firebase.database();
-    const postRef = db.ref("postdata");
+    const postRef = db.ref(`Fact_By_Universe/postData/${nextPostNumber}`);
     await postRef.once("value").then(function (snapshot) {
       data = snapshot.val();
     });
@@ -188,8 +188,6 @@ const getData = async () => {
     console.log("error", error);
   }
 };
-
-console.log("out cron");
 
 const instagramLoginFunction = async () => {
   // Persist cookies after Instagram client log in
@@ -211,13 +209,13 @@ const instagramLoginFunction = async () => {
   );
 
   const nextPostNumber = await getNextPostNumber();
-  const postData = await getData();
+  const postData = await getData(nextPostNumber);
 
   let nextPostUrl = "";
   let hashtagStr = "";
-  if (postData?.length > 0 && postData?.length >= nextPostNumber) {
-    nextPostUrl = postData[nextPostNumber]?.postURL;
-    hashtagStr = postData[nextPostNumber]?.hashtagStr;
+  if (postData?.postURL) {
+    nextPostUrl = postData?.postURL;
+    hashtagStr = postData?.hashtagStr;
   }
 
   console.log("nextPostUrl", nextPostUrl, "nextPostNumber", nextPostNumber);
