@@ -138,11 +138,11 @@ async function getAnswerCode(auth) {
   );
 }
 
-const getNextPostNumber = async () => {
+const getNextPostNumber = async (selectedPage) => {
   try {
     let data = "";
     const db = firebase.database();
-    const nextPostRef = db.ref("Fact_By_Universe/nextPostIndex");
+    const nextPostRef = db.ref(`${selectedPage}/nextPostIndex`);
     await nextPostRef.once("value").then(function (snapshot) {
       data = snapshot.val();
     });
@@ -153,10 +153,10 @@ const getNextPostNumber = async () => {
   }
 };
 
-const updateNextPostNumber = async (nextPostIndex) => {
+const updateNextPostNumber = async (nextPostIndex, selectedPage) => {
   try {
     const db = firebase.database();
-    const nextPostRef = db.ref("Fact_By_Universe");
+    const nextPostRef = db.ref(selectedPage);
     nextPostRef.update(
       {
         nextPostIndex: nextPostIndex,
@@ -174,11 +174,11 @@ const updateNextPostNumber = async (nextPostIndex) => {
   }
 };
 
-const getData = async (nextPostNumber) => {
+const getData = async (nextPostNumber, selectedPage) => {
   try {
     let data = {};
     const db = firebase.database();
-    const postRef = db.ref(`Fact_By_Universe/postData/${nextPostNumber}`);
+    const postRef = db.ref(`${selectedPage}/postData/${nextPostNumber}`);
     await postRef.once("value").then(function (snapshot) {
       data = snapshot.val();
     });
@@ -189,14 +189,51 @@ const getData = async (nextPostNumber) => {
   }
 };
 
-const instagramLoginFunction = async () => {
+const INSTA_PAGES_ID = {
+  FACT_BY_UNIVERSE: "Fact_By_Universe",
+  FACT_BY_UNIVERSE_HINDI: "Fact_By_Universe_Hindi",
+};
+
+const getInstaCredentials = (selectedPage) => {
+  let credentials = undefined;
+  switch (selectedPage) {
+    case INSTA_PAGES_ID.FACT_BY_UNIVERSE:
+      credentials = {
+        username: "factbyuniverse",
+        password: "Pavan.100",
+        cookieFileName: "cookies",
+      };
+      break;
+
+    case INSTA_PAGES_ID.FACT_BY_UNIVERSE_HINDI:
+      credentials = {
+        username: "factbyuniversehindi",
+        password: "Pavan.100",
+        cookieFileName: "cookies1",
+      };
+      break;
+
+    default:
+      credentials = {
+        username: "factbyuniverse",
+        password: "Pavan.100",
+        cookieFileName: "cookies",
+      };
+      break;
+  }
+  return credentials;
+};
+
+const instagramLoginFunction = async (selectedPage) => {
   // Persist cookies after Instagram client log in
-  const cookieStore = new FileCookieStore("./cookies.json");
+  const instaCredentials = getInstaCredentials(selectedPage);
+  const { username, password, cookieFileName } = instaCredentials || {};
+  const cookieStore = new FileCookieStore(`./${cookieFileName}.json`);
 
   const client = new Instagram(
     {
-      username: process.env.INSTAGRAM_USERNAME,
-      password: process.env.INSTAGRAM_PASSWORD,
+      username: username,
+      password: password,
       cookieStore,
     },
     {
@@ -208,8 +245,8 @@ const instagramLoginFunction = async () => {
     }
   );
 
-  const nextPostNumber = await getNextPostNumber();
-  const postData = await getData(nextPostNumber);
+  const nextPostNumber = await getNextPostNumber(selectedPage);
+  const postData = await getData(nextPostNumber, selectedPage);
 
   let nextPostUrl = "";
   let hashtagStr = "";
@@ -226,19 +263,32 @@ const instagramLoginFunction = async () => {
       .read(nextPostUrl)
       .then((lenna) => {
         return lenna
-          .resize(800, 800, jimp.RESIZE_NEAREST_NEIGHBOR)
+          .resize(1080, 1080, jimp.RESIZE_NEAREST_NEIGHBOR)
           .quality(100)
           .write(`./post${nextPostNumber}.jpg`, async () => {
             await client
               .uploadPhoto({
                 photo: `post${nextPostNumber}.jpg`,
-                caption: `follow @factbyuniverse for more such facts \r\n \r\n #fact #factbyuniverse ${hashtagStr}`,
+                caption: `👉TURN ON POST NOTIFICATION TO NEVER MISS AN UPDATE FROM US😊
+                          .
+                          .
+                          🔥Follow 
+                          @factbyuniverse 🔥 
+                          @factbyuniversehindi 🔥 
+                          .
+                          .
+                          for most amazing facts and science videos
+                          .
+                          .
+                          💗Like, Comment, Follow 💗
+                          #fact #factbyuniverse
+                          ${hashtagStr}`,
                 post: "feed",
               })
               .then(async ({ media }) => {
                 console.log(`https://www.instagram.com/p/${media.code}`);
 
-                await updateNextPostNumber(nextPostNumber + 1);
+                await updateNextPostNumber(nextPostNumber + 1, selectedPage);
                 fs.unlinkSync(`post${nextPostNumber}.jpg`);
               });
           });
@@ -255,7 +305,7 @@ const instagramLoginFunction = async () => {
 
     const delayedInstagramPostFunction = async (timeout) => {
       setTimeout(async () => {
-        await instagramPostPictureFunction();
+        await instagramPostPictureFunction(selectedPage);
       }, timeout);
     };
 
@@ -265,7 +315,9 @@ const instagramLoginFunction = async () => {
 
     const delayedLoginFunction = async (timeout) => {
       setTimeout(async () => {
-        await client.login().then(() => instagramPostPictureFunction());
+        await client
+          .login()
+          .then(() => instagramPostPictureFunction(selectedPage));
       }, timeout);
     };
 
@@ -322,7 +374,7 @@ const instagramLoginFunction = async () => {
                 `Answered Instagram security challenge with answer code: ${answerCode}`
               );
               await client.login();
-              await instagramPostPictureFunction();
+              await instagramPostPictureFunction(selectedPage);
             });
             // imaps.connect(emailConfig).then(async (connection) => {
             //   return connection.openBox("INBOX").then(async () => {
@@ -388,13 +440,13 @@ const instagramLoginFunction = async () => {
     }
     // Delete stored cookies, if any, and log in again
     console.log("Logging in again and setting new cookie store");
-    fs.unlinkSync("./cookies.json");
-    const newCookieStore = new FileCookieStore("./cookies.json");
+    fs.unlinkSync(`./${cookieFileName}.json`);
+    const newCookieStore = new FileCookieStore(`./${cookieFileName}.json`);
 
     const newClient = new Instagram(
       {
-        username: process.env.INSTAGRAM_USERNAME,
-        password: process.env.INSTAGRAM_PASSWORD,
+        username: username,
+        password: password,
         cookieStore: newCookieStore,
       },
       {
@@ -407,7 +459,7 @@ const instagramLoginFunction = async () => {
         console.log("Logging in again");
         await newClient
           .login()
-          .then(() => instagramPostPictureFunction())
+          .then(() => instagramPostPictureFunction(selectedPage))
           .catch((err) => {
             console.log(err);
             console.log("Login failed again!");
@@ -423,7 +475,18 @@ cron.schedule("39 9,12,15 * * *", async () => {
   setTimeout(async () => {
     try {
       console.log("in cron");
-      await instagramLoginFunction();
+      await instagramLoginFunction(INSTA_PAGES_ID.FACT_BY_UNIVERSE);
+    } catch (error) {
+      console.log("error", error);
+    }
+  }, 1000);
+});
+
+cron.schedule("29 6,12,15 * * *", async () => {
+  setTimeout(async () => {
+    try {
+      console.log("in cron hindi");
+      await instagramLoginFunction(INSTA_PAGES_ID.FACT_BY_UNIVERSE_HINDI);
     } catch (error) {
       console.log("error", error);
     }
@@ -435,8 +498,13 @@ app.get("/", async function (req, res) {
 });
 
 app.get("/test", async function (req, res) {
-  await instagramLoginFunction();
+  await instagramLoginFunction(INSTA_PAGES_ID.FACT_BY_UNIVERSE);
   res.send("API is working properly again");
+});
+
+app.get("/testhindi", async function (req, res) {
+  await instagramLoginFunction(INSTA_PAGES_ID.FACT_BY_UNIVERSE_HINDI);
+  res.send("API is working properly hindi");
 });
 
 app.listen(port, () => {
