@@ -471,7 +471,7 @@ const instagramLoginFunction = async (selectedPage) => {
   }
 };
 
-cron.schedule("39 9,12,15 * * *", async () => {
+cron.schedule("39 9,15 * * *", async () => {
   setTimeout(async () => {
     try {
       console.log("in cron");
@@ -482,7 +482,7 @@ cron.schedule("39 9,12,15 * * *", async () => {
   }, 1000);
 });
 
-cron.schedule("29 6,12,15 * * *", async () => {
+cron.schedule("29 6,12 * * *", async () => {
   setTimeout(async () => {
     try {
       console.log("in cron hindi");
