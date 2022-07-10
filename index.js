@@ -192,6 +192,8 @@ const getData = async (nextPostNumber, selectedPage) => {
 const INSTA_PAGES_ID = {
   FACT_BY_UNIVERSE: "Fact_By_Universe",
   FACT_BY_UNIVERSE_HINDI: "Fact_By_Universe_Hindi",
+  PAVAN_SUTHAR: "Pavan_Suthar",
+  COMEDY_WRITER_13: "Comedy_Writer_13",
 };
 
 const getInstaCredentials = (selectedPage) => {
@@ -210,6 +212,22 @@ const getInstaCredentials = (selectedPage) => {
         username: "factbyuniversehindi",
         password: "Pavan.100",
         cookieFileName: "cookies1",
+      };
+      break;
+
+    case INSTA_PAGES_ID.PAVAN_SUTHAR:
+      credentials = {
+        username: "pavan_suthar13",
+        password: "Pavan.100",
+        cookieFileName: "cookies2",
+      };
+      break;
+
+    case INSTA_PAGES_ID.COMEDY_WRITER_13:
+      credentials = {
+        username: "comedy_writer_13",
+        password: "Pavan.100",
+        cookieFileName: "cookies3",
       };
       break;
 
@@ -275,6 +293,7 @@ const instagramLoginFunction = async (selectedPage) => {
                           🔥Follow 
                           @factbyuniverse 🔥 
                           @factbyuniversehindi 🔥 
+                          @comedy_writer_13 🔥
                           .
                           .
                           for most amazing facts and science videos
@@ -487,6 +506,28 @@ cron.schedule("29 6,12 * * *", async () => {
     try {
       console.log("in cron hindi");
       await instagramLoginFunction(INSTA_PAGES_ID.FACT_BY_UNIVERSE_HINDI);
+    } catch (error) {
+      console.log("error", error);
+    }
+  }, 1000);
+});
+
+cron.schedule("49 6,9,12,15 * * *", async () => {
+  setTimeout(async () => {
+    try {
+      console.log("in cron pavan");
+      await instagramLoginFunction(INSTA_PAGES_ID.PAVAN_SUTHAR);
+    } catch (error) {
+      console.log("error", error);
+    }
+  }, 1000);
+});
+
+cron.schedule("9 9,12,15 * * *", async () => {
+  setTimeout(async () => {
+    try {
+      console.log("in cron comedy");
+      await instagramLoginFunction(INSTA_PAGES_ID.COMEDY_WRITER_13);
     } catch (error) {
       console.log("error", error);
     }
