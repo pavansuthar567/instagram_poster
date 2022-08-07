@@ -275,13 +275,16 @@ const instagramLoginFunction = async (selectedPage) => {
 
   console.log("nextPostUrl", nextPostUrl, "nextPostNumber", nextPostNumber);
 
+  const imageHeight =
+    selectedPage === INSTA_PAGES_ID.FACT_BY_UNIVERSE ? 1350 : 1080;
+
   const instagramPostPictureFunction = async () => {
     if (!nextPostUrl) return;
     jimp
       .read(nextPostUrl)
       .then((lenna) => {
         return lenna
-          .resize(1080, 1350, jimp.RESIZE_NEAREST_NEIGHBOR)
+          .resize(1080, imageHeight, jimp.RESIZE_NEAREST_NEIGHBOR)
           .quality(100)
           .write(`./post${nextPostNumber}.jpg`, async () => {
             await client
