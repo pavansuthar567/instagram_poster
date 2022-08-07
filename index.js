@@ -281,7 +281,7 @@ const instagramLoginFunction = async (selectedPage) => {
       .read(nextPostUrl)
       .then((lenna) => {
         return lenna
-          .resize(1080, 1080, jimp.RESIZE_NEAREST_NEIGHBOR)
+          .resize(1080, 1350, jimp.RESIZE_NEAREST_NEIGHBOR)
           .quality(100)
           .write(`./post${nextPostNumber}.jpg`, async () => {
             await client
