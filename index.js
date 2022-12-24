@@ -275,8 +275,8 @@ const instagramLoginFunction = async (selectedPage) => {
 
   console.log("nextPostUrl", nextPostUrl, "nextPostNumber1", nextPostNumber);
 
-  const imageHeight =
-    selectedPage === INSTA_PAGES_ID.FACT_BY_UNIVERSE ? 1350 : 1080;
+  // const imageHeight =
+  //   selectedPage === INSTA_PAGES_ID.FACT_BY_UNIVERSE ? 1350 : 1080;
 
   const instagramPostPictureFunction = async () => {
     if (!nextPostUrl) return;
@@ -284,7 +284,7 @@ const instagramLoginFunction = async (selectedPage) => {
       .read(nextPostUrl)
       .then((lenna) => {
         return lenna
-          .resize(1080, imageHeight, jimp.RESIZE_NEAREST_NEIGHBOR)
+          .resize(1080, 1080, jimp.RESIZE_NEAREST_NEIGHBOR)
           .quality(100)
           .write(`./post${nextPostNumber}.jpg`, async () => {
             await client
@@ -497,7 +497,7 @@ cron.schedule("39 9,12,15,17 * * *", async () => {
   // cron.schedule("39 9,15 * * *", async () => {
   setTimeout(async () => {
     try {
-      console.log("in cron");
+      console.log("in cron", new Date());
       await instagramLoginFunction(INSTA_PAGES_ID.FACT_BY_UNIVERSE);
     } catch (error) {
       console.log("error", error);
