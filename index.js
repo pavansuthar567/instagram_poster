@@ -273,7 +273,7 @@ const instagramLoginFunction = async (selectedPage) => {
     hashtagStr = postData?.hashtagStr;
   }
 
-  console.log("nextPostUrl", nextPostUrl, "nextPostNumber", nextPostNumber);
+  console.log("nextPostUrl", nextPostUrl, "nextPostNumber1", nextPostNumber);
 
   const imageHeight =
     selectedPage === INSTA_PAGES_ID.FACT_BY_UNIVERSE ? 1350 : 1080;
