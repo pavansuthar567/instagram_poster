@@ -352,7 +352,8 @@ const instagramLoginFunction = async (selectedPage) => {
     console.log("err.error", err.error);
 
     if (err.error && err.error.message === "checkpoint_required") {
-      const challengeUrl = err.error.checkpoint_url;
+      let challengeUrl = err.error.checkpoint_url;
+      if (challengeUrl) challengeUrl = challengeUrl.substring(25);
 
       await client.updateChallenge({
         challengeUrl,
