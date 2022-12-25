@@ -494,17 +494,17 @@ const instagramLoginFunction = async (selectedPage) => {
   }
 };
 
-cron.schedule("39 9,12,15,17 * * *", async () => {
-  // cron.schedule("39 9,15 * * *", async () => {
-  setTimeout(async () => {
-    try {
-      console.log("in cron", new Date());
-      await instagramLoginFunction(INSTA_PAGES_ID.FACT_BY_UNIVERSE);
-    } catch (error) {
-      console.log("error", error);
-    }
-  }, 1000);
-});
+// cron.schedule("39 9,12,15,17 * * *", async () => {
+// cron.schedule("39 9,15 * * *", async () => {
+setTimeout(async () => {
+  try {
+    console.log("in cron", new Date());
+    await instagramLoginFunction(INSTA_PAGES_ID.FACT_BY_UNIVERSE);
+  } catch (error) {
+    console.log("error", error);
+  }
+}, 1000);
+// });
 
 cron.schedule("29 6,12 * * *", async () => {
   setTimeout(async () => {
