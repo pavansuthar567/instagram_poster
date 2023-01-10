@@ -546,7 +546,7 @@ app.get("/", async function (req, res) {
 
 function startKeepAlive() {
   setInterval(function () {
-    console.log("startKeepAlive 9");
+    console.log("startKeepAlive 10");
     try {
       var options = {
         host: "instagram-poster.onrender.com",
@@ -558,7 +558,7 @@ function startKeepAlive() {
           res.on("data", function (chunk) {
             try {
               // optional logging... disable after it's working
-              console.log("HEROKU RESPONSE: 9" + chunk);
+              console.log("HEROKU RESPONSE: 10" + chunk);
             } catch (err) {
               console.log(err.message);
             }
@@ -570,8 +570,8 @@ function startKeepAlive() {
     } catch (error) {
       console.log("keep alive error", error);
     }
-  }, 10000); // load every 10 minutes
-  // }, 10 * 60 * 1000); // load every 10 minutes
+    // }, 10000); // load every 10 minutes
+  }, 10 * 60 * 1000); // load every 10 minutes
 }
 
 startKeepAlive();
