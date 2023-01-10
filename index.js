@@ -15,6 +15,7 @@ var Imap = require("imap");
 var MailParser = require("mailparser").MailParser;
 var Promise = require("bluebird");
 Promise.longStackTraces();
+var http = require("http");
 
 admin.initializeApp({
   credential: admin.cert(serviceAccount),
@@ -543,9 +544,37 @@ app.get("/", async function (req, res) {
   res.send("API is working properly");
 });
 
+function startKeepAlive() {
+  setInterval(function () {
+    var options = {
+      host: "localhost",
+      port: 4000,
+      path: "/test",
+    };
+    http
+      .get(options, function (res) {
+        res.on("data", function (chunk) {
+          try {
+            // optional logging... disable after it's working
+            console.log("HEROKU RESPONSE: " + chunk);
+          } catch (err) {
+            console.log(err.message);
+          }
+        });
+      })
+      .on("error", function (err) {
+        console.log("Error: " + err.message);
+      });
+  }, 5000); // load every 10 minutes
+  // }, 10 * 60 * 1000); // load every 10 minutes
+}
+
+startKeepAlive();
+
 app.get("/test", async function (req, res) {
-  await instagramLoginFunction(INSTA_PAGES_ID.FACT_BY_UNIVERSE);
+  console.log("test");
   res.send("API is working properly again");
+  // await instagramLoginFunction(INSTA_PAGES_ID.FACT_BY_UNIVERSE);
 });
 
 app.get("/testhindi", async function (req, res) {
