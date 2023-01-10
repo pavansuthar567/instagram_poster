@@ -546,13 +546,13 @@ app.get("/", async function (req, res) {
 
 function startKeepAlive() {
   setInterval(function () {
-    var options = {
-      host: "instagram-poster.onrender.com",
-      port: port,
-      path: "/test",
-    };
+    // var options = {
+    //   host: "instagram-poster.onrender.com",
+    //   port: port,
+    //   path: "/test",
+    // };
     http
-      .get(options, function (res) {
+      .get("https://instagram-poster.onrender.com/test", function (res) {
         res.on("data", function (chunk) {
           try {
             // optional logging... disable after it's working
