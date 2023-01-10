@@ -547,8 +547,8 @@ app.get("/", async function (req, res) {
 function startKeepAlive() {
   setInterval(function () {
     var options = {
-      host: "localhost",
-      port: 4000,
+      host: "https://instagram-poster.onrender.com",
+      port: port,
       path: "/test",
     };
     http
