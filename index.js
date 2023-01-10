@@ -546,25 +546,29 @@ app.get("/", async function (req, res) {
 
 function startKeepAlive() {
   setInterval(function () {
-    var options = {
-      host: "instagram-poster.onrender.com",
-      // port: port,
-      path: "/test",
-    };
-    http
-      .get(options, function (res) {
-        res.on("data", function (chunk) {
-          try {
-            // optional logging... disable after it's working
-            console.log("HEROKU RESPONSE: " + chunk);
-          } catch (err) {
-            console.log(err.message);
-          }
+    try {
+      var options = {
+        host: "instagram-poster.onrender.com",
+        port: 8080,
+        path: "/",
+      };
+      http
+        .get(options, function (res) {
+          res.on("data", function (chunk) {
+            try {
+              // optional logging... disable after it's working
+              console.log("HEROKU RESPONSE: " + chunk);
+            } catch (err) {
+              console.log(err.message);
+            }
+          });
+        })
+        .on("error", function (err) {
+          console.log("Error: " + err.message);
         });
-      })
-      .on("error", function (err) {
-        console.log("Error: " + err.message);
-      });
+    } catch (error) {
+      console.log("keep alive", error);
+    }
   }, 5000); // load every 10 minutes
   // }, 10 * 60 * 1000); // load every 10 minutes
 }
