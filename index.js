@@ -549,8 +549,8 @@ function startKeepAlive() {
     try {
       var options = {
         host: "instagram-poster.onrender.com",
-        port: 8080,
-        path: "/",
+        port: port,
+        path: "/test",
       };
       http
         .get(options, function (res) {
