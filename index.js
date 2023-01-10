@@ -546,11 +546,11 @@ app.get("/", async function (req, res) {
 
 function startKeepAlive() {
   setInterval(function () {
-    console.log("startKeepAlive");
+    console.log("startKeepAlive 9");
     try {
       var options = {
         host: "instagram-poster.onrender.com",
-        port: port,
+        // port: port,
         path: "/test",
       };
       http
@@ -558,19 +558,19 @@ function startKeepAlive() {
           res.on("data", function (chunk) {
             try {
               // optional logging... disable after it's working
-              console.log("HEROKU RESPONSE: 8" + chunk);
+              console.log("HEROKU RESPONSE: 9" + chunk);
             } catch (err) {
               console.log(err.message);
             }
           });
         })
         .on("error", function (err) {
-          console.log("Error: " + err.message);
+          console.log("Error: get" + err.message);
         });
     } catch (error) {
       console.log("keep alive error", error);
     }
-  }, 5000); // load every 10 minutes
+  }, 10000); // load every 10 minutes
   // }, 10 * 60 * 1000); // load every 10 minutes
 }
 
