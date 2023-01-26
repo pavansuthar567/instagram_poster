@@ -507,6 +507,18 @@ cron.schedule("50 9,12,13,15 * * *", async () => {
   }, 1000);
 });
 
+cron.schedule("35 20 * * *", async () => {
+  // cron.schedule("39 9,15 * * *", async () => {
+  setTimeout(async () => {
+    try {
+      console.log("in cron", new Date());
+      await instagramLoginFunction(INSTA_PAGES_ID.FACT_BY_UNIVERSE);
+    } catch (error) {
+      console.log("error", error);
+    }
+  }, 1000);
+});
+
 cron.schedule("29 6,12 * * *", async () => {
   setTimeout(async () => {
     try {
@@ -544,37 +556,37 @@ app.get("/", async function (req, res) {
   res.send("API is working properly");
 });
 
-function startKeepAlive() {
-  setInterval(function () {
-    console.log("startKeepAlive 10");
-    try {
-      var options = {
-        host: "instagram-poster.onrender.com",
-        // port: port,
-        path: "/test",
-      };
-      http
-        .get(options, function (res) {
-          res.on("data", function (chunk) {
-            try {
-              // optional logging... disable after it's working
-              console.log("HEROKU RESPONSE: 10" + chunk);
-            } catch (err) {
-              console.log(err.message);
-            }
-          });
-        })
-        .on("error", function (err) {
-          console.log("Error: get" + err.message);
-        });
-    } catch (error) {
-      console.log("keep alive error", error);
-    }
-    // }, 10000); // load every 10 minutes
-  }, 10 * 60 * 1000); // load every 10 minutes
-}
+// function startKeepAlive() {
+//   setInterval(function () {
+//     console.log("startKeepAlive 10");
+//     try {
+//       var options = {
+//         host: "instagram-poster.onrender.com",
+//         // port: port,
+//         path: "/test",
+//       };
+//       http
+//         .get(options, function (res) {
+//           res.on("data", function (chunk) {
+//             try {
+//               // optional logging... disable after it's working
+//               console.log("HEROKU RESPONSE: 10" + chunk);
+//             } catch (err) {
+//               console.log(err.message);
+//             }
+//           });
+//         })
+//         .on("error", function (err) {
+//           console.log("Error: get" + err.message);
+//         });
+//     } catch (error) {
+//       console.log("keep alive error", error);
+//     }
+//     // }, 10000); // load every 10 minutes
+//   }, 10 * 60 * 1000); // load every 10 minutes
+// }
 
-startKeepAlive();
+// startKeepAlive();
 
 app.get("/test", async function (req, res) {
   console.log("test");
