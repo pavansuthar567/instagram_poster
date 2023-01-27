@@ -507,7 +507,7 @@ cron.schedule("50 9,12,13,15 * * *", async () => {
   }, 1000);
 });
 
-cron.schedule("37 20 * * *", async () => {
+cron.schedule("36 17 * * *", async () => {
   // cron.schedule("39 9,15 * * *", async () => {
   setTimeout(async () => {
     try {
@@ -592,6 +592,14 @@ app.get("/test", async function (req, res) {
   console.log("test");
   res.send("API is working properly again");
   // await instagramLoginFunction(INSTA_PAGES_ID.FACT_BY_UNIVERSE);
+});
+
+app.get("/post_english", async function (req, res) {
+  console.log("test");
+  await instagramLoginFunction(INSTA_PAGES_ID.FACT_BY_UNIVERSE);
+  res.send(
+    "API is working properly - posted - INSTA_PAGES_ID.FACT_BY_UNIVERSE"
+  );
 });
 
 app.get("/testhindi", async function (req, res) {
