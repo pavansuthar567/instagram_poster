@@ -495,7 +495,7 @@ const instagramLoginFunction = async (selectedPage) => {
   }
 };
 
-cron.schedule("50 9,12,13,15 * * *", async () => {
+cron.schedule("50 6,9,12,15 * * *", async () => {
   // cron.schedule("39 9,15 * * *", async () => {
   setTimeout(async () => {
     try {
