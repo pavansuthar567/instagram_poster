@@ -32,8 +32,8 @@ let answerCode;
 
 const readline = require("readline");
 const { google } = require("googleapis");
+const { getMultipleRandom } = require("./global/helpers");
 const { hashTags } = require("./data/raw");
-const { getMultipleRandom } = require("./global/helper");
 
 // If modifying these scopes, delete token.json.
 const SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"];

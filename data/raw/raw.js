@@ -1,4 +1,4 @@
-export const hashTags = [
+exports.hashTags = [
   "#instafact",
   "#generalknowledge",
   "#knowledge",
