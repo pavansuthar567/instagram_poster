@@ -5,17 +5,17 @@ const FileCookieStore = require("tough-cookie-filestore2");
 const jimp = require("jimp");
 const fs = require("fs");
 const cron = require("node-cron");
-const imaps = require("imap-simple");
+// const imaps = require("imap-simple");
 const _ = require("lodash");
-const simpleParser = require("mailparser").simpleParser;
+// const simpleParser = require("mailparser").simpleParser;
 const firebase = require("firebase-admin");
 const admin = require("firebase-admin/app");
 var serviceAccount = require("./serviceAccountKey.json");
-var Imap = require("imap");
-var MailParser = require("mailparser").MailParser;
+// var Imap = require("imap");
+// var MailParser = require("mailparser").MailParser;
 var Promise = require("bluebird");
 Promise.longStackTraces();
-var http = require("http");
+// var http = require("http");
 
 admin.initializeApp({
   credential: admin.cert(serviceAccount),
@@ -32,6 +32,8 @@ let answerCode;
 
 const readline = require("readline");
 const { google } = require("googleapis");
+const { hashTags } = require("./data/raw");
+const { getMultipleRandom } = require("./global/helper");
 
 // If modifying these scopes, delete token.json.
 const SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"];
@@ -279,6 +281,10 @@ const instagramLoginFunction = async (selectedPage) => {
   // const imageHeight =
   //   selectedPage === INSTA_PAGES_ID.FACT_BY_UNIVERSE ? 1350 : 1080;
 
+  const defaultHashTagsStr = hashtagStr || "";
+  const defaultHashTags = defaultHashTagsStr.split(" ");
+  const tags = getMultipleRandom(hashTags, 25 - defaultHashTags.length);
+
   const instagramPostPictureFunction = async () => {
     if (!nextPostUrl) return;
     jimp
@@ -305,7 +311,7 @@ const instagramLoginFunction = async (selectedPage) => {
                           .
                           💗Like, Comment, Follow 💗
                           #fact #factbyuniverse
-                          ${hashtagStr}`,
+                          ${tags}`,
                 post: "feed",
               })
               .then(async ({ media }) => {
