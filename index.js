@@ -283,7 +283,10 @@ const instagramLoginFunction = async (selectedPage) => {
 
   const defaultHashTagsStr = hashtagStr || "";
   const defaultHashTags = defaultHashTagsStr.split(" ");
-  const tags = getMultipleRandom(hashTags, 25 - defaultHashTags.length);
+  const tagsArr = getMultipleRandom(hashTags, 25 - defaultHashTags.length);
+
+  let tags = "";
+  if (tagsArr?.length > 0) tags = tagsArr.join(" ");
 
   const instagramPostPictureFunction = async () => {
     if (!nextPostUrl) return;
