@@ -205,7 +205,7 @@ const getInstaCredentials = (selectedPage) => {
     case INSTA_PAGES_ID.FACT_BY_UNIVERSE:
       credentials = {
         username: "factbyuniverse",
-        password: "Pavan.100",
+        password: "Pavan@100",
         cookieFileName: "cookies",
       };
       break;
