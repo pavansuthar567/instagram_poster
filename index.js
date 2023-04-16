@@ -150,7 +150,7 @@ const getNextPostNumber = async (selectedPage) => {
       data = snapshot.val();
     });
     // console.log("getNextPostNumber", data);
-    return data;
+    return data || 0;
   } catch (error) {
     console.log("error - could not get next post number", error);
   }
@@ -197,6 +197,7 @@ const INSTA_PAGES_ID = {
   FACT_BY_UNIVERSE_HINDI: "Fact_By_Universe_Hindi",
   PAVAN_SUTHAR: "Pavan_Suthar",
   COMEDY_WRITER_13: "Comedy_Writer_13",
+  CHANAKYA_GANGA: "Chanakya_Ganga",
 };
 
 const getInstaCredentials = (selectedPage) => {
@@ -231,6 +232,14 @@ const getInstaCredentials = (selectedPage) => {
         username: "comedy_writer_13",
         password: "Pavan.100",
         cookieFileName: "cookies3",
+      };
+      break;
+
+    case INSTA_PAGES_ID.CHANAKYA_GANGA:
+      credentials = {
+        username: "chanakya_ganga",
+        password: "Pavan@100",
+        cookieFileName: "cookies4",
       };
       break;
 
@@ -283,7 +292,12 @@ const instagramLoginFunction = async (selectedPage) => {
 
   const defaultHashTagsStr = hashtagStr || "";
   const defaultHashTags = defaultHashTagsStr.split(" ");
-  const tagsArr = getMultipleRandom(hashTags, 25 - defaultHashTags.length);
+  const tagsArr = getMultipleRandom(
+    selectedPage === INSTA_PAGES_ID.CHANAKYA_GANGA
+      ? hashTags.chanakyaHashtags
+      : hashTags.factHashtags,
+    25 - defaultHashTags.length
+  );
 
   let tags = "";
   if (tagsArr?.length > 0) tags = tagsArr.join(" ");
@@ -300,13 +314,14 @@ const instagramLoginFunction = async (selectedPage) => {
             await client
               .uploadPhoto({
                 photo: `post${nextPostNumber}.jpg`,
-                caption: `👉TURN ON POST NOTIFICATION TO NEVER MISS AN UPDATE FROM US😊
+                caption: `Follow @${username}, 👉TURN ON POST NOTIFICATION TO NEVER MISS AN UPDATE FROM US😊
                           .
                           .
                           🔥Follow 
                           @factbyuniverse 🔥 
                           @factbyuniversehindi 🔥 
                           @comedy_writer_13 🔥
+                          @chanakya_ganga 🔥
                           .
                           .
                           for most amazing facts and science videos
@@ -343,7 +358,7 @@ const instagramLoginFunction = async (selectedPage) => {
 
     if (loginRes?.authenticated) await delayedInstagramPostFunction(10000);
   } catch (err) {
-    console.log("Login failed!");
+    console.log("Login failed!", err);
 
     const delayedLoginFunction = async (timeout) => {
       setTimeout(async () => {
@@ -494,7 +509,7 @@ const instagramLoginFunction = async (selectedPage) => {
           .login()
           .then(() => instagramPostPictureFunction(selectedPage))
           .catch((err) => {
-            console.log(err);
+            console.log("err", err);
             console.log("Login failed again!");
           });
       }, timeout);
@@ -510,6 +525,17 @@ cron.schedule("50 6,9,12,15 * * *", async () => {
     try {
       console.log("in cron", new Date());
       await instagramLoginFunction(INSTA_PAGES_ID.FACT_BY_UNIVERSE);
+    } catch (error) {
+      console.log("error", error);
+    }
+  }, 1000);
+});
+
+cron.schedule("40 6,9,12,15 * * *", async () => {
+  setTimeout(async () => {
+    try {
+      console.log("in cron", new Date());
+      await instagramLoginFunction(INSTA_PAGES_ID.CHANAKYA_GANGA);
     } catch (error) {
       console.log("error", error);
     }
@@ -609,6 +635,12 @@ app.get("/post_english", async function (req, res) {
   res.send(
     "API is working properly - posted - INSTA_PAGES_ID.FACT_BY_UNIVERSE"
   );
+});
+
+app.get("/test_chanakya", async function (req, res) {
+  console.log("test chanakya");
+  await instagramLoginFunction(INSTA_PAGES_ID.CHANAKYA_GANGA);
+  res.send("API is working properly - posted - INSTA_PAGES_ID.CHANAKYA_GANGA");
 });
 
 app.get("/testhindi", async function (req, res) {
