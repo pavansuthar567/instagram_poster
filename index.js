@@ -16,11 +16,17 @@ var serviceAccount = require("./serviceAccountKey.json");
 var Promise = require("bluebird");
 Promise.longStackTraces();
 // var http = require("http");
+const request = require("request");
+
+const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
+const ffmpeg = require("fluent-ffmpeg");
+ffmpeg.setFfmpegPath(ffmpegPath);
 
 admin.initializeApp({
   credential: admin.cert(serviceAccount),
   databaseURL:
     "https://insta-auto-de442-default-rtdb.asia-southeast1.firebasedatabase.app",
+  storageBucket: "insta-auto-de442.appspot.com",
 });
 
 require("dotenv").config();
@@ -648,6 +654,129 @@ app.get("/testhindi", async function (req, res) {
   await instagramLoginFunction(INSTA_PAGES_ID.FACT_BY_UNIVERSE_HINDI);
   res.send("API is working properly hindi");
 });
+
+// const uploadVideoToFirebase = () => {
+//   const bucket = firebase.storage().bucket();
+//   const filePath = "./output/video(1).mp4"; // replace with actual path to video file
+//   const destination = "Videos/video(1).mp4"; // replace with desired destination path in storage
+//   const db = firebase.database();
+//   const videoRef = db.ref("videos");
+
+//   console.log("bucket", bucket);
+//   const fileStreams = bucket.getFilesStream();
+//   console.log("fileStreams", fileStreams);
+
+//   bucket
+//     .upload(filePath, {
+//       destination: destination,
+//       metadata: {
+//         contentType: "video/mp4", // set the content type of the video file
+//       },
+//     })
+//     .then((res) => {
+//       console.log("Video uploaded successfully", res);
+//     })
+//     .catch((error) => {
+//       console.error("Error uploading video:", error);
+//     })
+//     .then(() => {
+//       // get the download URL of the video from Firebase Storage
+//       const videoFile = bucket.file("Videos/video(1).mp4");
+//       return videoFile.getSignedUrl({
+//         action: "read",
+//         expires: "03-17-2025",
+//       });
+//     })
+//     .then((urls) => {
+//       const videoUrl = urls[0];
+//       console.log("Video URL:", videoUrl);
+
+//       // store the video URL in the Firebase Realtime Database
+//       return videoRef.push({ url: videoUrl });
+//     })
+//     .then(() => {
+//       console.log("Video URL stored in Firebase Realtime Database");
+//     })
+//     .catch((error) => {
+//       console.error(
+//         "Error storing video URL in Firebase Realtime Database:",
+//         error
+//       );
+//     });
+// };
+
+// const convertImageToReel = () => {
+//   // specify the input image URL
+//   const imageUrl =
+//     "https://hcti.io/v1/image/6d24ffeb-0a91-4d2f-a3e8-6041c825c6f0";
+
+//   // specify the output video file path and name
+//   const outputPath = "./output/video(1).mp4";
+//   const imageFileName = "./temp/image.jpg";
+//   const audioUrl =
+//     "https://scontent.fstv8-1.fna.fbcdn.net/v/t39.12897-6/273298257_717374482979423_1209143018629427634_n.m4a?_nc_cat=101&ccb=1-7&_nc_sid=02c1ff&_nc_ohc=TYR3tGOM8IoAX860_-Q&_nc_ad=z-m&_nc_cid=2034&_nc_ht=scontent.fstv8-1.fna&oh=00_AfByczqhFuQrCRKyyGp2HI75c3GvgObexXDZV6j3GcR7cQ&oe=6447A6FE";
+//   const audioFileName = "./temp/audio.mp3";
+
+//   const duration = 10;
+//   const width = 720;
+//   const height = 1280;
+//   const fps = 30;
+
+//   const videoBitrate = "25M";
+//   const audioBitrate = "128k";
+
+//   // download image and audio files
+//   request(imageUrl)
+//     .pipe(fs.createWriteStream(imageFileName))
+//     .on("close", () => {
+//       request(audioUrl)
+//         .pipe(fs.createWriteStream(audioFileName))
+//         .on("close", () => {
+//           // use ffmpeg to create the video
+//           ffmpeg()
+//             .input(imageFileName)
+//             .loop(duration)
+//             .input(audioFileName)
+//             .outputOptions("-movflags frag_keyframe+empty_moov")
+//             .outputOptions("-pix_fmt yuv420p")
+//             .outputOptions("-profile:v main")
+//             .outputOptions("-level 3.1")
+//             .outputOptions("-g 30")
+//             .outputOptions("-keyint_min 120")
+//             .outputOptions("-sc_threshold 0")
+//             .outputOptions("-tune fastdecode")
+//             .outputOptions("-preset medium")
+//             .outputOptions("-crf 18")
+//             .outputOptions(`-s ${width}x${height}`)
+//             .outputOptions("-maxrate 25M")
+//             .outputOptions("-bufsize 25M")
+//             .outputOptions("-movflags +faststart")
+//             .outputOptions("-f mp4")
+//             .audioCodec("aac")
+//             .audioChannels(2)
+//             .audioFrequency(48000)
+//             .audioBitrate("128k")
+//             .videoCodec("libx264")
+//             .videoFilter(
+//               `scale=w='min(1920,iw)':h='min(1920,ih)*min(9/16,ih/iw)':force_original_aspect_ratio=decrease`
+//             )
+//             .fps(fps)
+//             .duration(duration)
+//             .output(outputPath)
+//             .on("end", () => {
+//               console.log("Video conversion complete");
+//             })
+//             .on("error", (err) => {
+//               console.log("Error while processing:", err.message);
+//             })
+//             .run();
+//         });
+//     });
+// };
+
+// // Working for reels perfectly
+// // convertImageToReel();
+// uploadVideoToFirebase();
 
 app.listen(port, () => {
   console.log(`Listening on port ${port}...`);
